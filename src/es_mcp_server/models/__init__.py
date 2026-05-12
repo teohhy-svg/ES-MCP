@@ -1,5 +1,35 @@
 """Pydantic models for MCP inputs and outputs."""
 
 from es_mcp_server.models.common import ErrorResponse, ErrorType, StrictModel
+from es_mcp_server.models.tools import (
+    ClusterHealthRequest,
+    DslSearchRequest,
+    ErrorTrendsRequest,
+    IndexMappingRequest,
+    IndexSettingsRequest,
+    ListIndicesRequest,
+    NodesSummaryRequest,
+    RecentLogsRequest,
+    SearchRequest,
+    ShardAllocationRequest,
+    SlowQueriesRequest,
+    SnapshotStatusRequest,
+)
 
-__all__ = ["ErrorResponse", "ErrorType", "StrictModel"]
+__all__ = [
+    "ClusterHealthRequest",
+    "DslSearchRequest",
+    "ErrorResponse",
+    "ErrorTrendsRequest",
+    "ErrorType",
+    "IndexMappingRequest",
+    "IndexSettingsRequest",
+    "ListIndicesRequest",
+    "NodesSummaryRequest",
+    "RecentLogsRequest",
+    "SearchRequest",
+    "ShardAllocationRequest",
+    "SlowQueriesRequest",
+    "SnapshotStatusRequest",
+    "StrictModel",
+]

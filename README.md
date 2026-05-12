@@ -2,7 +2,7 @@
 
 Production-grade Model Context Protocol server for safe Elasticsearch access from AI clients such as Codex, Claude Desktop, and ChatGPT MCP clients.
 
-Current status: Phase 2 is complete. The repository now contains the architecture harness, Python package skeleton, configuration layer, Docker skeleton, and focused configuration/security tests. Elasticsearch MCP tools are planned for Phase 3.
+Current status: Phase 3 is complete for read-only tools. The repository contains the architecture harness, Python package skeleton, configuration layer, Docker skeleton, read-only MCP tools, and focused configuration/security/query-builder tests. Phase 5 write/destructive tools are intentionally skipped for now.
 
 ## Mission
 ES-MCP will allow AI clients to safely interact with Elasticsearch for:
@@ -11,7 +11,7 @@ ES-MCP will allow AI clients to safely interact with Elasticsearch for:
 - Index discovery, mappings, and settings
 - Guarded search and limited DSL search
 - Observability workflows for logs, error trends, slow queries, shards, and snapshots
-- Optional index creation and deletion behind strict safety controls
+- Optional index creation and deletion are out of scope for the current read-only build
 
 The default posture is read-only, auditable, and conservative.
 
@@ -30,8 +30,8 @@ The server is designed around these defaults:
 
 See [harness/SECURITY_MODEL.md](harness/SECURITY_MODEL.md) for the detailed security proposal.
 
-## Planned MCP Tools
-Read-only tools:
+## MCP Tools
+Implemented read-only tools:
 
 - `es_cluster_health`
 - `es_nodes_summary`
@@ -48,8 +48,8 @@ Read-only tools:
 
 Optional write/destructive tools:
 
-- `es_create_index`, disabled unless `ES_ENABLE_WRITE_TOOLS=true`
-- `es_delete_index`, disabled unless `ES_ENABLE_DESTRUCTIVE_TOOLS=true`
+- `es_create_index`, intentionally not implemented or registered yet
+- `es_delete_index`, intentionally not implemented or registered yet
 
 See [harness/TOOL_SCHEMAS.md](harness/TOOL_SCHEMAS.md) for the proposed schemas and guardrails.
 
@@ -80,25 +80,25 @@ Target stack:
 See [harness/ARCHITECTURE.md](harness/ARCHITECTURE.md) for the full architecture plan.
 
 ## Project Skeleton
-Phase 2 adds:
+The foundation includes:
 
 - `pyproject.toml` package metadata and development tool configuration
 - `.env.example` with safe defaults
 - `src/es_mcp_server` package layout
 - typed environment settings in `config.py`
 - structured logging and secret masking helpers
-- placeholder MCP tool, resource, and prompt registries
+- MCP tool registration plus placeholder resource and prompt registries
 - Docker and docker-compose skeleton files
-- initial pytest coverage for configuration and masking behavior
+- pytest coverage for configuration, masking, guardrails, and query builders
 
-The server entrypoint exists as `es-mcp-server`, but no Elasticsearch tools are registered yet.
+Phase 3 adds registered read-only MCP tools for cluster health, nodes, indices, search, observability, shards, and snapshots.
 
 ## Development Phases
 1. Architecture and harness files
 2. Project skeleton and configuration
 3. Read-only MCP tools
 4. MCP resources and prompts
-5. Optional write/destructive tools with strict safety controls
+5. Optional write/destructive tools with strict safety controls, skipped for now
 6. Tests, Docker, documentation, and MCP client examples
 
 ## Harness Engineering
@@ -135,7 +135,7 @@ python -m pip install -e ".[dev]"
 pytest
 ```
 
-Run the placeholder MCP server:
+Run the MCP server:
 
 ```bash
 cp .env.example .env
@@ -143,4 +143,4 @@ es-mcp-server
 ```
 
 ## Repository Status
-This repo is intentionally not yet feature-complete as an MCP server. Phase 2 establishes the production package and configuration foundation before read-only tools are added.
+This repo is intentionally not yet feature-complete as an MCP server. Phase 3 establishes the read-only tool layer; resources and prompts are still planned for Phase 4.
