@@ -12,12 +12,7 @@ from es_mcp_server.tools import register_tools
 
 
 def build_server(settings: Settings | None = None) -> FastMCP:
-    """Build and register the MCP server.
-
-    Phase 2 intentionally registers empty tool/resource/prompt modules. The
-    registration points are stable so later phases can add capabilities without
-    changing startup behavior.
-    """
+    """Build and register the MCP server."""
 
     active_settings = settings or get_settings()
     configure_logging(active_settings)

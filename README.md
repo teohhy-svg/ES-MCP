@@ -2,7 +2,7 @@
 
 Production-grade Model Context Protocol server for safe Elasticsearch access from AI clients such as Codex, Claude Desktop, and ChatGPT MCP clients.
 
-Current status: Phase 3 is complete for read-only tools. The repository contains the architecture harness, Python package skeleton, configuration layer, Docker skeleton, read-only MCP tools, and focused configuration/security/query-builder tests. Phase 5 write/destructive tools are intentionally skipped for now.
+Current status: Phase 4 is complete. The repository contains the architecture harness, Python package skeleton, configuration layer, Docker skeleton, read-only MCP tools, MCP resources, MCP prompts, and focused configuration/security/query-builder tests. Phase 5 write/destructive tools are intentionally skipped for now.
 
 ## Mission
 ES-MCP will allow AI clients to safely interact with Elasticsearch for:
@@ -53,13 +53,13 @@ Optional write/destructive tools:
 
 See [harness/TOOL_SCHEMAS.md](harness/TOOL_SCHEMAS.md) for the proposed schemas and guardrails.
 
-## Planned MCP Resources
+## MCP Resources
 - `elasticsearch://cluster/health`
 - `elasticsearch://indices`
 - `elasticsearch://indices/{index}/mapping`
 - `elasticsearch://indices/{index}/settings`
 
-## Planned MCP Prompts
+## MCP Prompts
 - `investigate_elasticsearch_incident`
 - `troubleshoot_unassigned_shards`
 - `analyze_application_errors`
@@ -93,6 +93,8 @@ The foundation includes:
 
 Phase 3 adds registered read-only MCP tools for cluster health, nodes, indices, search, observability, shards, and snapshots.
 
+Phase 4 adds MCP resources and investigation prompt templates.
+
 ## Development Phases
 1. Architecture and harness files
 2. Project skeleton and configuration
@@ -100,6 +102,11 @@ Phase 3 adds registered read-only MCP tools for cluster health, nodes, indices, 
 4. MCP resources and prompts
 5. Optional write/destructive tools with strict safety controls, skipped for now
 6. Tests, Docker, documentation, and MCP client examples
+
+## Kibana Dashboards
+This MCP server connects to Elasticsearch, not Kibana. It can query and analyze the underlying Elasticsearch indices that power a Kibana dashboard, but it does not currently read dashboard layout, panels, saved searches, Lens configuration, or saved object metadata.
+
+Kibana dashboards are saved objects managed through Kibana APIs. This project intentionally denies `.kibana*` system indices by default, and Elastic warns not to write directly to the `.kibana` index. A future read-only Kibana extension could support `KIBANA_URL` and Kibana saved object export/read APIs, but that should be a separate guarded capability.
 
 ## Harness Engineering
 Specialist role files live in [harness](harness):
@@ -143,4 +150,4 @@ es-mcp-server
 ```
 
 ## Repository Status
-This repo is intentionally not yet feature-complete as an MCP server. Phase 3 establishes the read-only tool layer; resources and prompts are still planned for Phase 4.
+This repo is intentionally not yet feature-complete as an MCP server. Phase 4 establishes read-only tools, resources, and prompts; write/destructive tools remain intentionally skipped.
