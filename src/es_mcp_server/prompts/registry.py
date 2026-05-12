@@ -57,6 +57,20 @@ def register_prompts(mcp: FastMCP, settings: Settings) -> None:
             goal=goal,
         )
 
+    @mcp.prompt()
+    def investigate_kibana_dashboard(
+        dashboard_id_or_title: str,
+        symptoms: str,
+        space_id: str | None = None,
+    ) -> str:
+        """Guide read-only investigation of an existing Kibana dashboard."""
+
+        return build_investigate_kibana_dashboard_prompt(
+            dashboard_id_or_title=dashboard_id_or_title,
+            symptoms=symptoms,
+            space_id=space_id,
+        )
+
 
 def build_investigate_incident_prompt(symptoms: str, time_range: str) -> str:
     return f"""Investigate this Elasticsearch incident using only safe read-only tools.
@@ -171,4 +185,40 @@ Suggested workflow:
 Rules:
 - Do not execute the query until it passes the safety review.
 - Preserve the user's intent while reducing cluster risk.
+"""
+
+
+def build_investigate_kibana_dashboard_prompt(
+    dashboard_id_or_title: str,
+    symptoms: str,
+    space_id: str | None,
+) -> str:
+    space_line = f"Kibana space: `{space_id}`." if space_id else "Use the configured Kibana space."
+    return f"""Investigate an existing Kibana dashboard using read-only Kibana
+and Elasticsearch tools.
+
+Dashboard identifier or title:
+{dashboard_id_or_title}
+
+Symptoms:
+{symptoms}
+
+Scope:
+{space_line}
+
+Suggested workflow:
+1. Call `kbn_status` to verify Kibana and saved objects are available.
+2. If the dashboard ID is unknown, call `kbn_list_dashboards` with a title search.
+3. Call `kbn_get_dashboard` for the selected dashboard saved object.
+4. Call `kbn_dashboard_references` to identify panels, data views, saved searches,
+   Lens visualizations, maps, or other referenced saved objects.
+5. Use Elasticsearch tools such as `es_index_mapping`, `es_search`, `es_recent_logs`,
+   or `es_error_trends` only for the underlying allowed data indices.
+6. Summarize dashboard health, suspicious panels, missing references, and next
+   read-only checks.
+
+Rules:
+- Do not read or write `.kibana*` indices directly.
+- Do not call write, update, import, export, or delete Kibana APIs.
+- Keep result sizes small and preserve dashboard saved-object IDs in the evidence.
 """

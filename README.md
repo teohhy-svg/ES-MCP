@@ -1,8 +1,12 @@
 # ES-MCP
 
-Production-grade Model Context Protocol server for safe Elasticsearch access from AI clients such as Codex, Claude Desktop, and ChatGPT MCP clients.
+Production-grade Model Context Protocol server for safe Elasticsearch access from AI clients
+such as Codex, Claude Desktop, and ChatGPT MCP clients.
 
-Current status: Phase 6 is complete with Phase 5 intentionally skipped. The repository contains the architecture harness, Python package, read-only MCP tools, MCP resources, MCP prompts, Docker/full-stack hosting guidance, MCP client examples, and focused tests.
+Current status: Phase 6 is complete with Phase 5 intentionally skipped. The repository
+contains the architecture harness, Python package, read-only Elasticsearch and Kibana MCP
+tools, MCP resources, MCP prompts, Docker/full-stack hosting guidance, MCP client examples,
+and focused tests.
 
 ## Mission
 ES-MCP will allow AI clients to safely interact with Elasticsearch for:
@@ -11,6 +15,7 @@ ES-MCP will allow AI clients to safely interact with Elasticsearch for:
 - Index discovery, mappings, and settings
 - Guarded search and limited DSL search
 - Observability workflows for logs, error trends, slow queries, shards, and snapshots
+- Kibana status, spaces, dashboard discovery, and dashboard saved-object inspection
 - Optional index creation and deletion are out of scope for the current read-only build
 
 The default posture is read-only, auditable, and conservative.
@@ -45,6 +50,11 @@ Implemented read-only tools:
 - `es_slow_queries`
 - `es_shard_allocation`
 - `es_snapshot_status`
+- `kbn_status`
+- `kbn_spaces`
+- `kbn_list_dashboards`
+- `kbn_get_dashboard`
+- `kbn_dashboard_references`
 
 Optional write/destructive tools:
 
@@ -58,12 +68,18 @@ See [harness/TOOL_SCHEMAS.md](harness/TOOL_SCHEMAS.md) for the proposed schemas 
 - `elasticsearch://indices`
 - `elasticsearch://indices/{index}/mapping`
 - `elasticsearch://indices/{index}/settings`
+- `kibana://status`
+- `kibana://spaces`
+- `kibana://dashboards`
+- `kibana://dashboards/{dashboard_id}`
+- `kibana://dashboards/{dashboard_id}/references`
 
 ## MCP Prompts
 - `investigate_elasticsearch_incident`
 - `troubleshoot_unassigned_shards`
 - `analyze_application_errors`
 - `optimize_search_query`
+- `investigate_kibana_dashboard`
 
 ## Architecture
 Target stack:
@@ -121,11 +137,13 @@ The foundation includes:
 - Docker and docker-compose skeleton files
 - pytest coverage for configuration, masking, guardrails, and query builders
 
-Phase 3 adds registered read-only MCP tools for cluster health, nodes, indices, search, observability, shards, and snapshots.
+Phase 3 adds registered read-only MCP tools for cluster health, nodes, indices, search,
+observability, shards, and snapshots.
 
 Phase 4 adds MCP resources and investigation prompt templates.
 
-Phase 6 adds flexible hosting guidance, MCP client examples, Docker/full-stack instructions, and additional tests.
+Phase 6 adds flexible hosting guidance, MCP client examples, Docker/full-stack instructions,
+and additional tests.
 
 ## Development Phases
 1. Architecture and harness files
@@ -162,13 +180,21 @@ Full stack local Elasticsearch plus ES-MCP:
 docker compose --profile fullstack up --build
 ```
 
+Full stack local Elasticsearch, Kibana, and ES-MCP:
+
+```bash
+docker compose --profile fullstack-kibana up --build
+```
+
 ## MCP Client Examples
 Examples live in [examples](examples):
 
 - [codex-stdio.toml](examples/codex-stdio.toml)
 - [codex-http.toml](examples/codex-http.toml)
+- [codex-kibana-stdio.toml](examples/codex-kibana-stdio.toml)
 - [claude-desktop-stdio.json](examples/claude-desktop-stdio.json)
 - [claude-desktop-http.json](examples/claude-desktop-http.json)
+- [claude-desktop-kibana-stdio.json](examples/claude-desktop-kibana-stdio.json)
 - [mcp-project.json](examples/mcp-project.json)
 
 Codex stdio:
@@ -186,7 +212,8 @@ Codex HTTP:
 codex mcp add es-mcp --url http://127.0.0.1:8000/mcp
 ```
 
-Claude Desktop can use the JSON snippets in `examples/`. For stdio, set `command` to the full path of `es-mcp-server` if it is not on Claude Desktop's `PATH`.
+Claude Desktop can use the JSON snippets in `examples/`. For stdio, set `command` to the
+full path of `es-mcp-server` if it is not on Claude Desktop's `PATH`.
 
 ## Environment Variables
 | Variable | Default | Purpose |
@@ -196,6 +223,13 @@ Claude Desktop can use the JSON snippets in `examples/`. For stdio, set `command
 | `ELASTICSEARCH_PASSWORD` | unset | Basic auth password |
 | `ELASTICSEARCH_API_KEY` | unset | API key auth |
 | `ELASTICSEARCH_CA_CERT_PATH` | unset | CA certificate path for TLS |
+| `KIBANA_URL` | unset | Optional Kibana endpoint |
+| `KIBANA_USERNAME` | unset | Kibana basic auth username |
+| `KIBANA_PASSWORD` | unset | Kibana basic auth password |
+| `KIBANA_API_KEY` | unset | Kibana API key auth |
+| `KIBANA_CA_CERT_PATH` | unset | Kibana CA certificate path |
+| `KIBANA_SPACE_ID` | `default` | Default Kibana space |
+| `KIBANA_REQUEST_TIMEOUT_SECONDS` | `10` | Kibana API timeout |
 | `MCP_TRANSPORT` | `stdio` | `stdio` or `streamable-http` |
 | `MCP_HTTP_HOST` | `127.0.0.1` | HTTP bind host |
 | `MCP_HTTP_PORT` | `8000` | HTTP bind port |
@@ -209,9 +243,16 @@ Claude Desktop can use the JSON snippets in `examples/`. For stdio, set `command
 | `ES_SLOW_LOG_INDEX_PATTERN` | unset | Slow-log index pattern |
 
 ## Kibana Dashboards
-This MCP server connects to Elasticsearch, not Kibana. It can query and analyze the underlying Elasticsearch indices that power a Kibana dashboard, but it does not currently read dashboard layout, panels, saved searches, Lens configuration, or saved object metadata.
+This MCP server can now optionally connect to Kibana when `KIBANA_URL` is configured. It
+reads Kibana status, spaces, dashboard saved objects, and dashboard references through
+Kibana APIs.
 
-Kibana dashboards are saved objects managed through Kibana APIs. This project intentionally denies `.kibana*` system indices by default, and Elastic warns not to write directly to the `.kibana` index. A future read-only Kibana extension could support `KIBANA_URL` and Kibana saved object export/read APIs, but that should be a separate guarded capability.
+It still does not read or write `.kibana*` indices directly. Kibana dashboards are saved
+objects managed through Kibana APIs, and Elastic warns not to write directly to the
+`.kibana` index. This extension remains read-only and does not call write, import, export,
+update, or delete Kibana APIs.
+
+See [Kibana Extension Guide](docs/KIBANA.md).
 
 ## Harness Engineering
 Specialist role files live in [harness](harness):
@@ -226,7 +267,8 @@ Specialist role files live in [harness](harness):
 - DevOps Engineer
 - Documentation Engineer
 
-Each role defines mission, responsibilities, non-responsibilities, inputs, outputs, boundaries, quality gates, acceptance criteria, and example tasks.
+Each role defines mission, responsibilities, non-responsibilities, inputs, outputs,
+boundaries, quality gates, acceptance criteria, and example tasks.
 
 ## Testing
 The test strategy includes:
@@ -246,6 +288,7 @@ See [harness/TEST_PLAN.md](harness/TEST_PLAN.md).
 
 ## Documentation
 - [Hosting Guide](docs/HOSTING.md)
+- [Kibana Extension Guide](docs/KIBANA.md)
 - [Architecture](harness/ARCHITECTURE.md)
 - [Security Model](harness/SECURITY_MODEL.md)
 - [Tool Schemas](harness/TOOL_SCHEMAS.md)

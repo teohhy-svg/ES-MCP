@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "es-mcp-kibana": {
+      "type": "stdio",
+      "command": "es-mcp-server",
+      "args": [],
+      "env": {
+        "ELASTICSEARCH_URL": "http://localhost:9200",
+        "KIBANA_URL": "http://localhost:5601",
+        "KIBANA_SPACE_ID": "default",
+        "ES_READ_ONLY": "true",
+        "ES_ENABLE_WRITE_TOOLS": "false",
+        "ES_ENABLE_DESTRUCTIVE_TOOLS": "false",
+        "ES_INDEX_ALLOWLIST": "*",
+        "ES_INDEX_DENYLIST": ".*, .security*, .kibana*, .fleet*, .tasks, .async-search*"
+      }
+    }
+  }
+}

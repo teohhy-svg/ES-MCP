@@ -99,3 +99,48 @@ def test_settings_build_elasticsearch_client_options_with_api_key() -> None:
         "api_key": "api-key",
         "request_timeout": 7,
     }
+
+
+def test_settings_accept_optional_kibana_url_and_auth() -> None:
+    settings = Settings(
+        _env_file=None,
+        elasticsearch_url="http://localhost:9200",
+        kibana_url="http://localhost:5601",
+        kibana_username="elastic",
+        kibana_password="secret",
+    )
+
+    assert settings.kibana_url == "http://localhost:5601"
+    assert settings.masked_kibana_url == "http://localhost:5601"
+    assert settings.kibana_client_options()["auth"] == ("elastic", "secret")
+
+
+def test_settings_reject_mixed_kibana_auth_modes() -> None:
+    with pytest.raises(ValidationError, match="KIBANA_API_KEY"):
+        Settings(
+            _env_file=None,
+            elasticsearch_url="http://localhost:9200",
+            kibana_url="http://localhost:5601",
+            kibana_username="elastic",
+            kibana_password="secret",
+            kibana_api_key="api-key",
+        )
+
+
+def test_settings_reject_credentials_embedded_in_kibana_url() -> None:
+    with pytest.raises(ValidationError, match="Do not embed credentials"):
+        Settings(
+            _env_file=None,
+            elasticsearch_url="http://localhost:9200",
+            kibana_url="http://elastic:secret@localhost:5601",
+        )
+
+
+def test_settings_reject_invalid_kibana_space_id() -> None:
+    with pytest.raises(ValidationError, match="KIBANA_SPACE_ID"):
+        Settings(
+            _env_file=None,
+            elasticsearch_url="http://localhost:9200",
+            kibana_url="http://localhost:5601",
+            kibana_space_id="Observability",
+        )

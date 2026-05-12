@@ -5,10 +5,14 @@ import pytest
 from es_mcp_server.config import Settings
 from es_mcp_server.security import (
     SecurityError,
+    cap_kibana_timeout,
     cap_size,
     cap_timeout,
     mask_sensitive_value,
     validate_index_pattern,
+    validate_kibana_saved_object_id,
+    validate_kibana_search_text,
+    validate_kibana_space_id,
     validate_limited_dsl,
     validate_repository_name,
     validate_sort,
@@ -91,6 +95,19 @@ def test_cap_size_and_timeout_apply_settings_limits() -> None:
     assert cap_timeout(10, settings) == 5
 
 
+def test_cap_kibana_timeout_uses_kibana_default() -> None:
+    settings = Settings(
+        _env_file=None,
+        elasticsearch_url="http://localhost:9200",
+        kibana_request_timeout_seconds=4,
+        max_timeout_seconds=5,
+        request_timeout_seconds=3,
+    )
+
+    assert cap_kibana_timeout(None, settings) == 4
+    assert cap_kibana_timeout(10, settings) == 5
+
+
 def test_validate_sort_rejects_unsafe_expression() -> None:
     with pytest.raises(SecurityError, match="invalid sort"):
         validate_sort(["@timestamp;desc"])
@@ -99,6 +116,32 @@ def test_validate_sort_rejects_unsafe_expression() -> None:
 def test_validate_repository_name_rejects_wildcards() -> None:
     with pytest.raises(SecurityError, match="repository"):
         validate_repository_name("snapshots-*")
+
+
+def test_validate_kibana_space_id_accepts_default_and_named_space() -> None:
+    assert validate_kibana_space_id(None) is None
+    assert validate_kibana_space_id("default") == "default"
+    assert validate_kibana_space_id("observability") == "observability"
+
+
+def test_validate_kibana_space_id_rejects_uppercase_space() -> None:
+    with pytest.raises(SecurityError, match="space id"):
+        validate_kibana_space_id("Observability")
+
+
+def test_validate_kibana_saved_object_id_rejects_paths() -> None:
+    with pytest.raises(SecurityError, match="path"):
+        validate_kibana_saved_object_id("../dashboard")
+
+
+def test_validate_kibana_search_text_rejects_long_values() -> None:
+    with pytest.raises(SecurityError, match="too long"):
+        validate_kibana_search_text("x" * 300)
+
+
+def test_validate_kibana_search_text_rejects_wildcards() -> None:
+    with pytest.raises(SecurityError, match="wildcard"):
+        validate_kibana_search_text("*latency*")
 
 
 def test_validate_limited_dsl_accepts_safe_bool_query() -> None:

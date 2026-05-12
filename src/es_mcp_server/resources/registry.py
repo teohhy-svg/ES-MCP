@@ -11,7 +11,15 @@ from pydantic import ValidationError
 
 from es_mcp_server.config import Settings
 from es_mcp_server.es_client import ElasticsearchService, create_elasticsearch_client
+from es_mcp_server.kibana_client import KibanaService, create_kibana_http_client
 from es_mcp_server.models.common import ErrorResponse, ErrorType
+from es_mcp_server.models.kibana import (
+    KibanaDashboardReferencesRequest,
+    KibanaDashboardRequest,
+    KibanaListDashboardsRequest,
+    KibanaSpacesRequest,
+    KibanaStatusRequest,
+)
 from es_mcp_server.models.tools import (
     ClusterHealthRequest,
     IndexMappingRequest,
@@ -49,6 +57,48 @@ def register_resources(mcp: FastMCP, settings: Settings) -> None:
         """Read settings for an allowed Elasticsearch index."""
 
         return _run_resource(lambda: service.index_settings(IndexSettingsRequest(index=index)))
+
+    if settings.kibana_url:
+        kibana_service = KibanaService(create_kibana_http_client(settings), settings)
+        register_kibana_resources(mcp, kibana_service)
+
+
+def register_kibana_resources(mcp: FastMCP, service: KibanaService) -> None:
+    @mcp.resource("kibana://status")
+    def kibana_status() -> dict[str, Any]:
+        """Read Kibana operational status."""
+
+        return _run_resource(lambda: service.status(KibanaStatusRequest()))
+
+    @mcp.resource("kibana://spaces")
+    def kibana_spaces() -> dict[str, Any]:
+        """Read visible Kibana spaces."""
+
+        return _run_resource(lambda: service.spaces(KibanaSpacesRequest()))
+
+    @mcp.resource("kibana://dashboards")
+    def kibana_dashboards() -> dict[str, Any]:
+        """Read dashboard summaries in the configured Kibana space."""
+
+        return _run_resource(lambda: service.list_dashboards(KibanaListDashboardsRequest()))
+
+    @mcp.resource("kibana://dashboards/{dashboard_id}")
+    def kibana_dashboard(dashboard_id: str) -> dict[str, Any]:
+        """Read a Kibana dashboard saved object."""
+
+        return _run_resource(
+            lambda: service.get_dashboard(KibanaDashboardRequest(dashboard_id=dashboard_id))
+        )
+
+    @mcp.resource("kibana://dashboards/{dashboard_id}/references")
+    def kibana_dashboard_references(dashboard_id: str) -> dict[str, Any]:
+        """Read dashboard references and panel metadata."""
+
+        return _run_resource(
+            lambda: service.dashboard_references(
+                KibanaDashboardReferencesRequest(dashboard_id=dashboard_id)
+            )
+        )
 
 
 def _run_resource(action: Callable[[], dict[str, Any]]) -> dict[str, Any]:

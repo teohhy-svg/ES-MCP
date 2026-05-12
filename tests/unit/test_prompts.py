@@ -3,6 +3,7 @@ from __future__ import annotations
 from es_mcp_server.prompts.registry import (
     build_analyze_application_errors_prompt,
     build_investigate_incident_prompt,
+    build_investigate_kibana_dashboard_prompt,
     build_optimize_search_query_prompt,
     build_troubleshoot_unassigned_shards_prompt,
 )
@@ -47,3 +48,15 @@ def test_optimize_search_query_prompt_warns_against_risky_constructs() -> None:
     assert "leading wildcards" in prompt
     assert "es_index_mapping" in prompt
     assert "Do not execute the query" in prompt
+
+
+def test_investigate_kibana_dashboard_prompt_uses_kibana_tools() -> None:
+    prompt = build_investigate_kibana_dashboard_prompt(
+        dashboard_id_or_title="Latency dashboard",
+        symptoms="empty panels",
+        space_id="observability",
+    )
+
+    assert "kbn_status" in prompt
+    assert "kbn_dashboard_references" in prompt
+    assert ".kibana*" in prompt

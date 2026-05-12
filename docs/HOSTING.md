@@ -6,6 +6,7 @@ ES-MCP supports two practical hosting modes:
 - Streamable HTTP for Docker, full-stack compose, and remote MCP clients.
 
 Phase 5 write/destructive tools are intentionally skipped. All examples keep the server read-only.
+Kibana support is optional and enabled only when `KIBANA_URL` is configured.
 
 ## Configuration
 Copy the example environment and edit the Elasticsearch connection:
@@ -40,6 +41,13 @@ MCP_TRANSPORT=streamable-http
 MCP_HTTP_HOST=0.0.0.0
 MCP_HTTP_PORT=8000
 MCP_HTTP_PATH=/mcp
+```
+
+Optional Kibana read-only dashboard support:
+
+```bash
+KIBANA_URL=http://localhost:5601
+KIBANA_SPACE_ID=default
 ```
 
 ## Local Stdio
@@ -107,6 +115,12 @@ Start Elasticsearch plus ES-MCP over HTTP:
 docker compose --profile fullstack up --build
 ```
 
+Start Elasticsearch, Kibana, and ES-MCP over HTTP:
+
+```bash
+docker compose --profile fullstack-kibana up --build
+```
+
 The MCP endpoint is:
 
 ```text
@@ -119,6 +133,12 @@ The Elasticsearch endpoint is:
 http://localhost:9200
 ```
 
+The Kibana endpoint is:
+
+```text
+http://localhost:5601
+```
+
 ## Production Notes
 - Prefer least-privileged Elasticsearch credentials with monitor/read privileges only.
 - Keep `ES_READ_ONLY=true`.
@@ -127,6 +147,10 @@ http://localhost:9200
 - Keep `.kibana*` and `.security*` denied unless a separately reviewed feature requires them.
 - Put HTTP deployments behind your normal internal network controls or an MCP gateway.
 - Use TLS and `ELASTICSEARCH_CA_CERT_PATH` when connecting to secured Elasticsearch.
+- Configure `KIBANA_URL` only when the MCP client needs dashboard saved-object context.
+- Use Kibana read-only privileges for dashboard and saved-object access.
+- Do not grant this server Kibana write, import, export, or delete privileges unless a separately
+  reviewed feature adds those capabilities.
 
 ## Integration Test Pattern
 The intended integration loop is:

@@ -134,7 +134,18 @@ def _duration_ms(started: float) -> int:
 
 
 def _result_count(result: dict[str, Any]) -> int | None:
-    for key in ("hits", "indices", "nodes", "shards", "snapshots", "repositories", "buckets"):
+    for key in (
+        "hits",
+        "indices",
+        "nodes",
+        "shards",
+        "snapshots",
+        "repositories",
+        "buckets",
+        "spaces",
+        "dashboards",
+        "panels",
+    ):
         value = result.get(key)
         if isinstance(value, list):
             return len(value)

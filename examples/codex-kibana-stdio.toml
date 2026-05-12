@@ -1,0 +1,19 @@
+# Add this under ~/.codex/config.toml, or use:
+# codex mcp add es-mcp-kibana \
+#   --env ELASTICSEARCH_URL=http://localhost:9200 \
+#   --env KIBANA_URL=http://localhost:5601 \
+#   -- es-mcp-server
+
+[mcp_servers.es-mcp-kibana]
+command = "es-mcp-server"
+args = []
+
+[mcp_servers.es-mcp-kibana.env]
+ELASTICSEARCH_URL = "http://localhost:9200"
+KIBANA_URL = "http://localhost:5601"
+KIBANA_SPACE_ID = "default"
+ES_READ_ONLY = "true"
+ES_ENABLE_WRITE_TOOLS = "false"
+ES_ENABLE_DESTRUCTIVE_TOOLS = "false"
+ES_INDEX_ALLOWLIST = "*"
+ES_INDEX_DENYLIST = ".*, .security*, .kibana*, .fleet*, .tasks, .async-search*"

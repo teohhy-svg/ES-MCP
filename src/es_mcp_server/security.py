@@ -25,8 +25,11 @@ SENSITIVE_KEY_PARTS = (
 _BEARER_RE = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+")
 _API_KEY_RE = re.compile(r"(?i)\bApiKey\s+[A-Za-z0-9._~+/=-]+")
 _FIELD_RE = re.compile(r"^[A-Za-z0-9_@.*-]+$")
+_KIBANA_ID_RE = re.compile(r"^[A-Za-z0-9_.:@-]+$")
+_KIBANA_SPACE_RE = re.compile(r"^[a-z0-9_-]+$")
 _REPOSITORY_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 _SORT_RE = re.compile(r"^[A-Za-z0-9_@.-]+(?::(asc|desc))?$")
+MAX_KIBANA_QUERY_LENGTH = 256
 
 BLOCKED_DSL_KEYS = {
     "collapse",
@@ -135,6 +138,13 @@ def cap_timeout(timeout: float | None, settings: Settings) -> float:
     return min(effective, settings.max_timeout_seconds)
 
 
+def cap_kibana_timeout(timeout: float | None, settings: Settings) -> float:
+    effective = settings.kibana_request_timeout_seconds if timeout is None else timeout
+    if effective <= 0:
+        raise SecurityError("request timeout must be greater than zero")
+    return min(effective, settings.max_timeout_seconds)
+
+
 def validate_index_pattern(
     index: str,
     settings: Settings,
@@ -184,6 +194,43 @@ def validate_repository_name(repository: str) -> str:
     candidate = repository.strip()
     if not candidate or candidate != repository or not _REPOSITORY_RE.fullmatch(candidate):
         raise SecurityError("repository name contains unsupported characters")
+    return candidate
+
+
+def validate_kibana_space_id(space_id: str | None) -> str | None:
+    if space_id is None:
+        return None
+    candidate = space_id.strip()
+    if candidate in {"", "default"}:
+        return "default"
+    if candidate != space_id or not _KIBANA_SPACE_RE.fullmatch(candidate):
+        raise SecurityError("Kibana space id contains unsupported characters")
+    return candidate
+
+
+def validate_kibana_saved_object_id(saved_object_id: str) -> str:
+    candidate = saved_object_id.strip()
+    if not candidate or candidate != saved_object_id:
+        raise SecurityError("Kibana saved object id is required")
+    if "/" in candidate or "\\" in candidate or ".." in candidate:
+        raise SecurityError("Kibana saved object id contains unsupported path characters")
+    if not _KIBANA_ID_RE.fullmatch(candidate):
+        raise SecurityError("Kibana saved object id contains unsupported characters")
+    return candidate
+
+
+def validate_kibana_search_text(search: str | None) -> str | None:
+    if search is None:
+        return None
+    candidate = search.strip()
+    if not candidate:
+        return None
+    if len(candidate) > MAX_KIBANA_QUERY_LENGTH:
+        raise SecurityError("Kibana search text is too long")
+    if any(char in candidate for char in ("\x00", "\n", "\r")):
+        raise SecurityError("Kibana search text contains unsupported control characters")
+    if "*" in candidate or "?" in candidate:
+        raise SecurityError("Kibana dashboard search does not allow wildcard characters")
     return candidate
 
 

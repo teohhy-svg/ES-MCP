@@ -13,6 +13,24 @@ services:
       timeout: 5s
       retries: 12
 
+  kibana:
+    image: ${KIBANA_DOCKER_IMAGE:-docker.elastic.co/kibana/kibana:8.17.0}
+    profiles: ["kibana", "fullstack-kibana"]
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      SERVER_HOST: 0.0.0.0
+      TELEMETRY_ENABLED: "false"
+    ports:
+      - "5601:5601"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:5601/api/status || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
   es-mcp-server:
     build: .
     profiles: ["server", "fullstack"]
@@ -32,4 +50,29 @@ services:
       - "8000:8000"
     depends_on:
       elasticsearch:
+        condition: service_healthy
+
+  es-mcp-server-kibana:
+    build: .
+    profiles: ["fullstack-kibana"]
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      KIBANA_URL: http://kibana:5601
+      KIBANA_SPACE_ID: default
+      MCP_TRANSPORT: streamable-http
+      MCP_HTTP_HOST: 0.0.0.0
+      MCP_HTTP_PORT: "8000"
+      MCP_HTTP_PATH: /mcp
+      ES_READ_ONLY: "true"
+      ES_ENABLE_WRITE_TOOLS: "false"
+      ES_ENABLE_DESTRUCTIVE_TOOLS: "false"
+      ES_INDEX_ALLOWLIST: "*"
+      ES_INDEX_DENYLIST: ".*, .security*, .kibana*, .fleet*, .tasks, .async-search*"
+      ES_MCP_LOG_FORMAT: json
+    ports:
+      - "8000:8000"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kibana:
         condition: service_healthy

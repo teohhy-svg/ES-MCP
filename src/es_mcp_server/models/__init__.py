@@ -1,6 +1,19 @@
 """Pydantic models for MCP inputs and outputs."""
 
 from es_mcp_server.models.common import ErrorResponse, ErrorType, StrictModel
+from es_mcp_server.models.kibana import (
+    KibanaDashboardReferencesRequest,
+    KibanaDashboardReferencesResponse,
+    KibanaDashboardRequest,
+    KibanaDashboardResponse,
+    KibanaDashboardSummary,
+    KibanaListDashboardsRequest,
+    KibanaListDashboardsResponse,
+    KibanaSpacesRequest,
+    KibanaSpacesResponse,
+    KibanaStatusRequest,
+    KibanaStatusResponse,
+)
 from es_mcp_server.models.tools import (
     ClusterHealthRequest,
     DslSearchRequest,
@@ -24,6 +37,17 @@ __all__ = [
     "ErrorType",
     "IndexMappingRequest",
     "IndexSettingsRequest",
+    "KibanaDashboardReferencesRequest",
+    "KibanaDashboardReferencesResponse",
+    "KibanaDashboardRequest",
+    "KibanaDashboardResponse",
+    "KibanaDashboardSummary",
+    "KibanaListDashboardsRequest",
+    "KibanaListDashboardsResponse",
+    "KibanaSpacesRequest",
+    "KibanaSpacesResponse",
+    "KibanaStatusRequest",
+    "KibanaStatusResponse",
     "ListIndicesRequest",
     "NodesSummaryRequest",
     "RecentLogsRequest",

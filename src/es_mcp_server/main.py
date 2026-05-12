@@ -26,6 +26,7 @@ def build_server(settings: Settings | None = None) -> FastMCP:
             "event": "server_starting",
             "transport": active_settings.mcp_transport.value,
             "elasticsearch_url": active_settings.masked_elasticsearch_url,
+            "kibana_url": active_settings.masked_kibana_url,
             "read_only": active_settings.read_only,
         },
     )

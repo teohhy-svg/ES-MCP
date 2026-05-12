@@ -6,8 +6,10 @@ from mcp.server.fastmcp import FastMCP
 
 from es_mcp_server.config import Settings
 from es_mcp_server.es_client import ElasticsearchService, create_elasticsearch_client
+from es_mcp_server.kibana_client import KibanaService, create_kibana_http_client
 from es_mcp_server.tools.cluster import register_cluster_tools
 from es_mcp_server.tools.indices import register_index_tools
+from es_mcp_server.tools.kibana import register_kibana_tools
 from es_mcp_server.tools.observability import register_observability_tools
 from es_mcp_server.tools.search import register_search_tools
 from es_mcp_server.tools.shards import register_shard_tools
@@ -27,3 +29,6 @@ def register_tools(mcp: FastMCP, settings: Settings) -> None:
     register_observability_tools(mcp, settings, service)
     register_shard_tools(mcp, settings, service)
     register_snapshot_tools(mcp, settings, service)
+    if settings.kibana_url:
+        kibana_service = KibanaService(create_kibana_http_client(settings), settings)
+        register_kibana_tools(mcp, settings, kibana_service)
