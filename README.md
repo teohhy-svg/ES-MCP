@@ -2,7 +2,7 @@
 
 Production-grade Model Context Protocol server for safe Elasticsearch access from AI clients such as Codex, Claude Desktop, and ChatGPT MCP clients.
 
-Current status: Phase 1 is complete. This repository currently contains the architecture and harness-engineering plan. Server implementation starts in Phase 2.
+Current status: Phase 2 is complete. The repository now contains the architecture harness, Python package skeleton, configuration layer, Docker skeleton, and focused configuration/security tests. Elasticsearch MCP tools are planned for Phase 3.
 
 ## Mission
 ES-MCP will allow AI clients to safely interact with Elasticsearch for:
@@ -79,6 +79,20 @@ Target stack:
 
 See [harness/ARCHITECTURE.md](harness/ARCHITECTURE.md) for the full architecture plan.
 
+## Project Skeleton
+Phase 2 adds:
+
+- `pyproject.toml` package metadata and development tool configuration
+- `.env.example` with safe defaults
+- `src/es_mcp_server` package layout
+- typed environment settings in `config.py`
+- structured logging and secret masking helpers
+- placeholder MCP tool, resource, and prompt registries
+- Docker and docker-compose skeleton files
+- initial pytest coverage for configuration and masking behavior
+
+The server entrypoint exists as `es-mcp-server`, but no Elasticsearch tools are registered yet.
+
 ## Development Phases
 1. Architecture and harness files
 2. Project skeleton and configuration
@@ -113,5 +127,20 @@ The planned test strategy includes:
 
 See [harness/TEST_PLAN.md](harness/TEST_PLAN.md).
 
+## Local Development
+Create a Python 3.11+ environment, install the package, and run tests:
+
+```bash
+python -m pip install -e ".[dev]"
+pytest
+```
+
+Run the placeholder MCP server:
+
+```bash
+cp .env.example .env
+es-mcp-server
+```
+
 ## Repository Status
-This repo is intentionally not yet runnable as an MCP server. The first committed milestone establishes the production architecture and harness before code is added.
+This repo is intentionally not yet feature-complete as an MCP server. Phase 2 establishes the production package and configuration foundation before read-only tools are added.

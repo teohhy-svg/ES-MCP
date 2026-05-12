@@ -1,0 +1,71 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "es-mcp-server"
+version = "0.1.0"
+description = "Safe Model Context Protocol server for Elasticsearch"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "teohhy-svg" }
+]
+keywords = ["elasticsearch", "mcp", "model-context-protocol", "observability"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: System :: Monitoring",
+  "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+]
+dependencies = [
+  "elasticsearch>=8.13.0,<10.0.0",
+  "mcp[cli]>=1.0.0,<2.0.0",
+  "pydantic>=2.7.0,<3.0.0",
+  "pydantic-settings>=2.2.1,<3.0.0",
+  "python-dotenv>=1.0.1,<2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.10.0,<2.0.0",
+  "pytest>=8.2.0,<9.0.0",
+  "pytest-asyncio>=0.23.0,<1.0.0",
+  "ruff>=0.5.0,<1.0.0",
+]
+
+[project.scripts]
+es-mcp-server = "es_mcp_server.main:main"
+
+[project.urls]
+Repository = "https://github.com/teohhy-svg/ES-MCP"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/es_mcp_server"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S", "SIM"]
+ignore = [
+  "S101",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["es_mcp_server"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+markers = [
+  "integration: tests that require docker-compose Elasticsearch",
+]
