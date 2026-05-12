@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "es-mcp": {
+      "type": "stdio",
+      "command": "es-mcp-server",
+      "args": [],
+      "env": {
+        "ELASTICSEARCH_URL": "${ELASTICSEARCH_URL:-http://localhost:9200}",
+        "ES_READ_ONLY": "true",
+        "ES_ENABLE_WRITE_TOOLS": "false",
+        "ES_ENABLE_DESTRUCTIVE_TOOLS": "false",
+        "ES_INDEX_ALLOWLIST": "${ES_INDEX_ALLOWLIST:-*}",
+        "ES_INDEX_DENYLIST": ".*, .security*, .kibana*, .fleet*, .tasks, .async-search*"
+      }
+    }
+  }
+}

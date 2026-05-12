@@ -14,4 +14,6 @@ RUN python -m pip install --no-cache-dir --upgrade pip \
 RUN useradd --create-home --shell /usr/sbin/nologin appuser
 USER appuser
 
+EXPOSE 8000
+
 CMD ["es-mcp-server"]

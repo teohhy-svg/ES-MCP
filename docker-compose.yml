@@ -15,15 +15,21 @@ services:
 
   es-mcp-server:
     build: .
-    profiles: ["server"]
+    profiles: ["server", "fullstack"]
     environment:
       ELASTICSEARCH_URL: http://elasticsearch:9200
+      MCP_TRANSPORT: streamable-http
+      MCP_HTTP_HOST: 0.0.0.0
+      MCP_HTTP_PORT: "8000"
+      MCP_HTTP_PATH: /mcp
       ES_READ_ONLY: "true"
       ES_ENABLE_WRITE_TOOLS: "false"
       ES_ENABLE_DESTRUCTIVE_TOOLS: "false"
       ES_INDEX_ALLOWLIST: "*"
       ES_INDEX_DENYLIST: ".*, .security*, .kibana*, .fleet*, .tasks, .async-search*"
       ES_MCP_LOG_FORMAT: json
+    ports:
+      - "8000:8000"
     depends_on:
       elasticsearch:
         condition: service_healthy

@@ -48,6 +48,7 @@ class Settings(BaseSettings):
         le=65535,
         validation_alias="MCP_HTTP_PORT",
     )
+    mcp_http_path: str = Field(default="/mcp", validation_alias="MCP_HTTP_PATH")
 
     elasticsearch_url: str = Field(min_length=1, validation_alias="ELASTICSEARCH_URL")
     elasticsearch_username: str | None = Field(
@@ -165,6 +166,13 @@ class Settings(BaseSettings):
         if normalized not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
             raise ValueError("ES_MCP_LOG_LEVEL must be a standard Python logging level")
         return normalized
+
+    @field_validator("mcp_http_path")
+    @classmethod
+    def validate_http_path(cls, value: str) -> str:
+        if not value.startswith("/"):
+            raise ValueError("MCP_HTTP_PATH must start with /")
+        return value
 
     @model_validator(mode="after")
     def validate_auth_and_limits(self) -> "Settings":

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 from mcp.server.fastmcp import FastMCP
 
 from es_mcp_server.audit import configure_logging, get_logger
@@ -16,6 +18,7 @@ def build_server(settings: Settings | None = None) -> FastMCP:
 
     active_settings = settings or get_settings()
     configure_logging(active_settings)
+    configure_fastmcp_environment(active_settings)
     logger = get_logger()
     logger.info(
         "starting_server",
@@ -42,6 +45,17 @@ def main() -> None:
     settings = get_settings()
     server = build_server(settings)
     server.run(transport=settings.mcp_transport.value)
+
+
+def configure_fastmcp_environment(settings: Settings) -> None:
+    """Bridge ES-MCP settings into FastMCP's HTTP transport settings."""
+
+    os.environ.setdefault("FASTMCP_TRANSPORT", settings.mcp_transport.value)
+    os.environ.setdefault("FASTMCP_HOST", settings.mcp_http_host)
+    os.environ.setdefault("FASTMCP_PORT", str(settings.mcp_http_port))
+    os.environ.setdefault("FASTMCP_STREAMABLE_HTTP_PATH", settings.mcp_http_path)
+    os.environ.setdefault("FASTMCP_STATELESS_HTTP", "true")
+    os.environ.setdefault("FASTMCP_JSON_RESPONSE", "true")
 
 
 if __name__ == "__main__":

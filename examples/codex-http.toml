@@ -1,0 +1,6 @@
+# Start ES-MCP with streamable HTTP, then add this under ~/.codex/config.toml.
+# You can also use: codex mcp add es-mcp --url http://127.0.0.1:8000/mcp
+
+[mcp_servers.es-mcp]
+url = "http://127.0.0.1:8000/mcp"
+enabled = true

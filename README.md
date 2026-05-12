@@ -2,7 +2,7 @@
 
 Production-grade Model Context Protocol server for safe Elasticsearch access from AI clients such as Codex, Claude Desktop, and ChatGPT MCP clients.
 
-Current status: Phase 4 is complete. The repository contains the architecture harness, Python package skeleton, configuration layer, Docker skeleton, read-only MCP tools, MCP resources, MCP prompts, and focused configuration/security/query-builder tests. Phase 5 write/destructive tools are intentionally skipped for now.
+Current status: Phase 6 is complete with Phase 5 intentionally skipped. The repository contains the architecture harness, Python package, read-only MCP tools, MCP resources, MCP prompts, Docker/full-stack hosting guidance, MCP client examples, and focused tests.
 
 ## Mission
 ES-MCP will allow AI clients to safely interact with Elasticsearch for:
@@ -79,6 +79,36 @@ Target stack:
 
 See [harness/ARCHITECTURE.md](harness/ARCHITECTURE.md) for the full architecture plan.
 
+## Quick Start
+Use Python 3.11+.
+
+```bash
+python -m pip install -e ".[dev]"
+cp .env.example .env
+pytest
+```
+
+Run as a local stdio MCP server:
+
+```bash
+es-mcp-server
+```
+
+Run as streamable HTTP:
+
+```bash
+MCP_TRANSPORT=streamable-http \
+MCP_HTTP_HOST=0.0.0.0 \
+MCP_HTTP_PORT=8000 \
+es-mcp-server
+```
+
+The HTTP endpoint is:
+
+```text
+http://localhost:8000/mcp
+```
+
 ## Project Skeleton
 The foundation includes:
 
@@ -95,6 +125,8 @@ Phase 3 adds registered read-only MCP tools for cluster health, nodes, indices, 
 
 Phase 4 adds MCP resources and investigation prompt templates.
 
+Phase 6 adds flexible hosting guidance, MCP client examples, Docker/full-stack instructions, and additional tests.
+
 ## Development Phases
 1. Architecture and harness files
 2. Project skeleton and configuration
@@ -102,6 +134,79 @@ Phase 4 adds MCP resources and investigation prompt templates.
 4. MCP resources and prompts
 5. Optional write/destructive tools with strict safety controls, skipped for now
 6. Tests, Docker, documentation, and MCP client examples
+
+## Hosting Options
+Detailed guidance lives in [docs/HOSTING.md](docs/HOSTING.md).
+
+Container only, using an existing Elasticsearch cluster:
+
+```bash
+docker build -t es-mcp-server .
+docker run --rm -i --env-file .env es-mcp-server
+```
+
+Container only over streamable HTTP:
+
+```bash
+docker run --rm \
+  --env-file .env \
+  -e MCP_TRANSPORT=streamable-http \
+  -e MCP_HTTP_HOST=0.0.0.0 \
+  -p 8000:8000 \
+  es-mcp-server
+```
+
+Full stack local Elasticsearch plus ES-MCP:
+
+```bash
+docker compose --profile fullstack up --build
+```
+
+## MCP Client Examples
+Examples live in [examples](examples):
+
+- [codex-stdio.toml](examples/codex-stdio.toml)
+- [codex-http.toml](examples/codex-http.toml)
+- [claude-desktop-stdio.json](examples/claude-desktop-stdio.json)
+- [claude-desktop-http.json](examples/claude-desktop-http.json)
+- [mcp-project.json](examples/mcp-project.json)
+
+Codex stdio:
+
+```bash
+codex mcp add es-mcp \
+  --env ELASTICSEARCH_URL=http://localhost:9200 \
+  --env ES_READ_ONLY=true \
+  -- es-mcp-server
+```
+
+Codex HTTP:
+
+```bash
+codex mcp add es-mcp --url http://127.0.0.1:8000/mcp
+```
+
+Claude Desktop can use the JSON snippets in `examples/`. For stdio, set `command` to the full path of `es-mcp-server` if it is not on Claude Desktop's `PATH`.
+
+## Environment Variables
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `ELASTICSEARCH_URL` | required | Elasticsearch endpoint |
+| `ELASTICSEARCH_USERNAME` | unset | Basic auth username |
+| `ELASTICSEARCH_PASSWORD` | unset | Basic auth password |
+| `ELASTICSEARCH_API_KEY` | unset | API key auth |
+| `ELASTICSEARCH_CA_CERT_PATH` | unset | CA certificate path for TLS |
+| `MCP_TRANSPORT` | `stdio` | `stdio` or `streamable-http` |
+| `MCP_HTTP_HOST` | `127.0.0.1` | HTTP bind host |
+| `MCP_HTTP_PORT` | `8000` | HTTP bind port |
+| `MCP_HTTP_PATH` | `/mcp` | Streamable HTTP path |
+| `ES_READ_ONLY` | `true` | Read-only safety posture |
+| `ES_INDEX_ALLOWLIST` | `*` | Allowed index patterns |
+| `ES_INDEX_DENYLIST` | system indices | Denied index patterns |
+| `ES_MAX_RESULT_SIZE` | `100` | Maximum search/list result size |
+| `ES_MAX_TIMEOUT_SECONDS` | `30` | Maximum request timeout |
+| `ES_LOG_INDEX_PATTERN` | `logs-*` | Default log index pattern |
+| `ES_SLOW_LOG_INDEX_PATTERN` | unset | Slow-log index pattern |
 
 ## Kibana Dashboards
 This MCP server connects to Elasticsearch, not Kibana. It can query and analyze the underlying Elasticsearch indices that power a Kibana dashboard, but it does not currently read dashboard layout, panels, saved searches, Lens configuration, or saved object metadata.
@@ -123,8 +228,8 @@ Specialist role files live in [harness](harness):
 
 Each role defines mission, responsibilities, non-responsibilities, inputs, outputs, boundaries, quality gates, acceptance criteria, and example tasks.
 
-## Test Plan
-The planned test strategy includes:
+## Testing
+The test strategy includes:
 
 - Unit tests for configuration and security guardrails
 - Mocked tool tests for Elasticsearch interactions
@@ -132,22 +237,19 @@ The planned test strategy includes:
 - Opt-in docker-compose integration tests against Elasticsearch
 - CI gates for formatting, linting, typing, tests, and Docker build
 
+```bash
+pytest
+ES_MCP_RUN_INTEGRATION=1 pytest -m integration
+```
+
 See [harness/TEST_PLAN.md](harness/TEST_PLAN.md).
 
-## Local Development
-Create a Python 3.11+ environment, install the package, and run tests:
-
-```bash
-python -m pip install -e ".[dev]"
-pytest
-```
-
-Run the MCP server:
-
-```bash
-cp .env.example .env
-es-mcp-server
-```
+## Documentation
+- [Hosting Guide](docs/HOSTING.md)
+- [Architecture](harness/ARCHITECTURE.md)
+- [Security Model](harness/SECURITY_MODEL.md)
+- [Tool Schemas](harness/TOOL_SCHEMAS.md)
+- [Test Plan](harness/TEST_PLAN.md)
 
 ## Repository Status
-This repo is intentionally not yet feature-complete as an MCP server. Phase 4 establishes read-only tools, resources, and prompts; write/destructive tools remain intentionally skipped.
+This repo is intentionally read-only for now. Phase 5 write/destructive tools remain skipped.

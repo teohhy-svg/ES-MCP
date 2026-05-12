@@ -17,6 +17,7 @@ def test_settings_default_to_read_only_safety() -> None:
     assert settings.max_result_size == 100
     assert settings.request_timeout_seconds == 10
     assert settings.mcp_transport is McpTransport.STDIO
+    assert settings.mcp_http_path == "/mcp"
     assert settings.log_format is LogFormat.JSON
 
 
@@ -74,6 +75,15 @@ def test_settings_reject_request_timeout_above_limit() -> None:
             elasticsearch_url="http://localhost:9200",
             request_timeout_seconds=60,
             max_timeout_seconds=30,
+        )
+
+
+def test_settings_reject_invalid_http_path() -> None:
+    with pytest.raises(ValidationError, match="MCP_HTTP_PATH"):
+        Settings(
+            _env_file=None,
+            elasticsearch_url="http://localhost:9200",
+            mcp_http_path="mcp",
         )
 
 
