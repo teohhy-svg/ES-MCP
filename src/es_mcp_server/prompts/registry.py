@@ -71,6 +71,34 @@ def register_prompts(mcp: FastMCP, settings: Settings) -> None:
             space_id=space_id,
         )
 
+    @mcp.prompt()
+    def investigate_alert_to_case(
+        alert_or_rule: str,
+        symptoms: str,
+        space_id: str | None = None,
+    ) -> str:
+        """Trace a rule or alert through actions, workflows, connectors, and cases."""
+
+        return build_investigate_alert_to_case_prompt(
+            alert_or_rule=alert_or_rule,
+            symptoms=symptoms,
+            space_id=space_id,
+        )
+
+    @mcp.prompt()
+    def troubleshoot_workflow_execution(
+        workflow_id: str,
+        symptoms: str,
+        space_id: str | None = None,
+    ) -> str:
+        """Investigate workflow definition, dependencies, and execution failures."""
+
+        return build_troubleshoot_workflow_execution_prompt(
+            workflow_id=workflow_id,
+            symptoms=symptoms,
+            space_id=space_id,
+        )
+
 
 def build_investigate_incident_prompt(symptoms: str, time_range: str) -> str:
     return f"""Investigate this Elasticsearch incident using only safe read-only tools.
@@ -174,8 +202,8 @@ Query or DSL:
 ```
 
 Suggested workflow:
-1. Identify risky constructs such as scripts, regex, query_string, leading
-   wildcards, large size, deep pagination, broad source fields, or expensive
+1. Identify risky constructs such as scripts, regex, query_string, leading wildcards,
+   large size, deep pagination, broad source fields, or expensive
    aggregations.
 2. If an index is supplied, call `es_index_mapping` to verify field types before suggesting changes.
 3. Prefer `es_search` high-level parameters when possible.
@@ -221,4 +249,82 @@ Rules:
 - Do not read or write `.kibana*` indices directly.
 - Do not call write, update, import, export, or delete Kibana APIs.
 - Keep result sizes small and preserve dashboard saved-object IDs in the evidence.
+"""
+
+
+def build_investigate_alert_to_case_prompt(
+    alert_or_rule: str,
+    symptoms: str,
+    space_id: str | None,
+) -> str:
+    space_line = f"Kibana space: `{space_id}`." if space_id else "Use the configured Kibana space."
+    return f"""Trace an Elastic alert or rule through its operational dependencies.
+
+Alert or rule identifier:
+{alert_or_rule}
+
+Symptoms:
+{symptoms}
+
+Scope:
+{space_line}
+
+Suggested workflow:
+1. Call `kbn_capability_report` and `kbn_alerting_health` first.
+2. Use `kbn_list_rules` if the rule ID is unknown, then call `kbn_get_rule`.
+3. Call `kbn_rule_query` in build mode to inspect the generated Elasticsearch query
+   without executing it.
+4. Inspect every rule action ID with `kbn_list_connectors`; record action group,
+   frequency, throttle, and missing or deprecated connectors.
+5. If the action invokes a workflow, use `kbn_list_workflows`, `kbn_get_workflow`,
+   `kbn_workflow_connectors`, and `kbn_workflow_executions`.
+6. Use `kbn_list_cases`, `kbn_get_case`, `kbn_case_alerts`, and `kbn_case_activity`
+   to verify whether downstream review or incident cases exist and what happened to them.
+7. If an AI step is involved, inspect `kbn_list_ai_agents`, `kbn_get_ai_agent`, and
+   `kbn_list_ai_tools`. Use Fleet tools only when the alert involves endpoint agents.
+8. Report the first broken link in the chain with IDs, timestamps, permission evidence,
+   and a safe manual remediation plan.
+
+Rules:
+- Keep the investigation read-only.
+- Do not claim an alert was delivered merely because a rule action exists.
+- Separate missing data, permission denial, unsupported Kibana version, license limits,
+  and actual execution failure.
+- Do not expose connector secrets, credentials, or unnecessary personal data.
+"""
+
+
+def build_troubleshoot_workflow_execution_prompt(
+    workflow_id: str,
+    symptoms: str,
+    space_id: str | None,
+) -> str:
+    space_line = f"Kibana space: `{space_id}`." if space_id else "Use the configured Kibana space."
+    return f"""Investigate an Elastic workflow failure using read-only MCP tools.
+
+Workflow ID:
+{workflow_id}
+
+Symptoms:
+{symptoms}
+
+Scope:
+{space_line}
+
+Suggested workflow:
+1. Call `kbn_capability_report` to distinguish permissions from version or license support.
+2. Call `kbn_get_workflow` and verify `valid`, `enabled`, triggers, inputs, step names,
+   connector IDs, agent IDs, and output references.
+3. Call `kbn_workflow_connectors` and `kbn_list_connectors` to verify dependencies.
+4. Call `kbn_workflow_executions` with `status=failed`, then compare recent successful
+   and failed executions.
+5. Inspect referenced rules, cases, Agent Builder agents, Fleet agents, and Elasticsearch
+   indices with their dedicated read-only tools.
+6. Report the failing step, evidence, likely privilege or schema issue, and a minimal
+   proposed YAML change for human review.
+
+Rules:
+- Do not run, enable, update, or delete the workflow.
+- Do not invent missing connector, agent, index, alert, or case identifiers.
+- Treat alert-triggered workflows as incomplete until attached under the rule's Actions.
 """

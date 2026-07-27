@@ -397,3 +397,23 @@ Guards:
 - Requires exact index name, no wildcard, no comma list, no alias pattern.
 - Requires `confirmation_phrase == "delete index {index}"`.
 - Index must pass allowlist and denylist checks.
+
+## Kibana Operations Tools
+
+All Kibana operations below are read-only, space-aware, size-capped where applicable,
+and use documented public APIs rather than direct `.kibana*` or `.alerts-*` access.
+
+| Area | Tools | Primary guard |
+| --- | --- | --- |
+| Capability | `kbn_capability_report` | Returns access/version states without response bodies |
+| Alerting | `kbn_alerting_health`, `kbn_rule_types` | Framework metadata only |
+| Rules | `kbn_list_rules`, `kbn_get_rule`, `kbn_rule_query` | Query inspector is fixed to `mode=build` |
+| Connectors | `kbn_list_connectors` | No execution; recursive secret masking |
+| Cases | `kbn_list_cases`, `kbn_get_case`, `kbn_case_alerts`, `kbn_case_activity` | No create, update, comment, push, or delete |
+| Workflows | `kbn_list_workflows`, `kbn_get_workflow`, `kbn_workflow_executions`, `kbn_workflow_connectors` | No run, create, update, enable, or delete |
+| Agent Builder | `kbn_list_ai_agents`, `kbn_get_ai_agent`, `kbn_list_ai_tools` | No conversation or tool execution |
+| Fleet | `kbn_list_fleet_agents` | No enrollment, action, upgrade, or policy changes |
+
+Workflow APIs require a compatible Kibana version. Agent Builder and other solution
+features can also depend on license, plugin availability, and feature privileges. Call
+`kbn_capability_report` before interpreting a 404 or 403 as a data problem.

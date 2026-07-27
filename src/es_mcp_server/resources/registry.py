@@ -14,9 +14,15 @@ from es_mcp_server.es_client import ElasticsearchService, create_elasticsearch_c
 from es_mcp_server.kibana_client import KibanaService, create_kibana_http_client
 from es_mcp_server.models.common import ErrorResponse, ErrorType
 from es_mcp_server.models.kibana import (
+    KibanaCaseRequest,
     KibanaDashboardReferencesRequest,
     KibanaDashboardRequest,
+    KibanaFleetAgentsRequest,
+    KibanaListCasesRequest,
     KibanaListDashboardsRequest,
+    KibanaListRulesRequest,
+    KibanaListWorkflowsRequest,
+    KibanaSpaceRequest,
     KibanaSpacesRequest,
     KibanaStatusRequest,
 )
@@ -99,6 +105,62 @@ def register_kibana_resources(mcp: FastMCP, service: KibanaService) -> None:
                 KibanaDashboardReferencesRequest(dashboard_id=dashboard_id)
             )
         )
+
+    @mcp.resource("kibana://capabilities")
+    def kibana_capabilities() -> dict[str, Any]:
+        """Probe major Kibana feature endpoints for access and availability."""
+
+        return _run_resource(lambda: service.capability_report(KibanaSpaceRequest()))
+
+    @mcp.resource("kibana://alerting/health")
+    def kibana_alerting_health() -> dict[str, Any]:
+        """Read alerting framework health."""
+
+        return _run_resource(lambda: service.alerting_health(KibanaSpaceRequest()))
+
+    @mcp.resource("kibana://rules")
+    def kibana_rules() -> dict[str, Any]:
+        """Read recent alerting rules."""
+
+        return _run_resource(lambda: service.list_rules(KibanaListRulesRequest()))
+
+    @mcp.resource("kibana://connectors")
+    def kibana_connectors() -> dict[str, Any]:
+        """Read configured connector summaries without secrets."""
+
+        return _run_resource(lambda: service.connectors(KibanaSpaceRequest()))
+
+    @mcp.resource("kibana://cases")
+    def kibana_cases() -> dict[str, Any]:
+        """Read recent cases."""
+
+        return _run_resource(lambda: service.list_cases(KibanaListCasesRequest()))
+
+    @mcp.resource("kibana://cases/{case_id}/alerts")
+    def kibana_case_alerts(case_id: str) -> dict[str, Any]:
+        """Read alerts attached to a case."""
+
+        return _run_resource(
+            lambda: service.case_alerts(KibanaCaseRequest(object_id=case_id))
+        )
+
+    @mcp.resource("kibana://workflows")
+    def kibana_workflows() -> dict[str, Any]:
+        """Read workflows when supported by the target Kibana version."""
+
+        return _run_resource(lambda: service.list_workflows(KibanaListWorkflowsRequest()))
+
+    @mcp.resource("kibana://agents/ai")
+    def kibana_ai_agents() -> dict[str, Any]:
+        """Read Elastic Agent Builder agents."""
+
+        return _run_resource(lambda: service.ai_agents(KibanaSpaceRequest()))
+
+    @mcp.resource("kibana://agents/fleet")
+    def kibana_fleet_agents() -> dict[str, Any]:
+        """Read Elastic Fleet agent health summaries."""
+
+        return _run_resource(lambda: service.fleet_agents(KibanaFleetAgentsRequest()))
 
 
 def _run_resource(action: Callable[[], dict[str, Any]]) -> dict[str, Any]:

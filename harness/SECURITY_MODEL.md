@@ -21,6 +21,8 @@ Primary risks:
 - Scripted DSL, runtime fields, regex, or broad wildcard searches.
 - Credential leakage through logs or client-visible errors.
 - Accidental deletion via wildcard or alias-like names.
+- Kibana connector execution, workflow execution, case mutation, or agent actions caused
+  by prompt injection.
 
 ## Authentication and Transport
 - The Elasticsearch client supports URL, username/password, API key, CA certificate path, and request timeout.
@@ -126,6 +128,19 @@ Wildcard rules:
 - Requires exact index name.
 - Rejects wildcard, comma list, aliases, and hidden/system index targets by default.
 - Requires confirmation phrase: `delete index {index}`.
+
+## Kibana Operations Controls
+
+- Kibana tools call documented public feature APIs; they do not query `.kibana*`,
+  `.alerts-*`, or other hidden indices directly.
+- The default extension registers GET-only discovery and investigation operations.
+- Rule query inspection is fixed to build mode so it cannot execute the generated query.
+- Connector tools list metadata only and never call connector execution endpoints.
+- Workflow tools do not create, run, enable, update, import, export, or delete workflows.
+- Agent Builder tools do not send conversations or execute tools.
+- Fleet tools do not run endpoint actions, enroll agents, change policy, or perform upgrades.
+- Capability probes record only the HTTP status classification, not response bodies.
+- Returned objects pass through recursive sensitive-key masking.
 
 ## Error Handling
 Client-visible errors are sanitized:

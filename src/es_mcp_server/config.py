@@ -3,24 +3,24 @@
 from __future__ import annotations
 
 import re
-from enum import Enum
+from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 from urllib.parse import urlsplit, urlunsplit
 
 from pydantic import AliasChoices, Field, SecretStr, field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 _KIBANA_SPACE_RE = re.compile(r"^[a-z0-9_-]+$")
 
 
-class McpTransport(str, Enum):
+class McpTransport(StrEnum):
     STDIO = "stdio"
     STREAMABLE_HTTP = "streamable-http"
 
 
-class LogFormat(str, Enum):
+class LogFormat(StrEnum):
     JSON = "json"
     TEXT = "text"
 
@@ -95,11 +95,11 @@ class Settings(BaseSettings):
         validation_alias="ES_ENABLE_DESTRUCTIVE_TOOLS",
     )
 
-    index_allowlist: list[str] = Field(
+    index_allowlist: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["*"],
         validation_alias="ES_INDEX_ALLOWLIST",
     )
-    index_denylist: list[str] = Field(
+    index_denylist: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: [
             ".*",
             ".security*",
@@ -226,7 +226,7 @@ class Settings(BaseSettings):
         return candidate
 
     @model_validator(mode="after")
-    def validate_auth_and_limits(self) -> "Settings":
+    def validate_auth_and_limits(self) -> Settings:
         has_basic_user = bool(self.elasticsearch_username)
         has_basic_password = self.elasticsearch_password is not None
         has_api_key = self.elasticsearch_api_key is not None
@@ -254,8 +254,6 @@ class Settings(BaseSettings):
             raise ValueError("KIBANA_CA_CERT_PATH does not exist")
         if self.request_timeout_seconds > self.max_timeout_seconds:
             raise ValueError("ES_REQUEST_TIMEOUT_SECONDS cannot exceed ES_MAX_TIMEOUT_SECONDS")
-        if self.kibana_request_timeout_seconds > self.max_timeout_seconds:
-            raise ValueError("KIBANA_REQUEST_TIMEOUT_SECONDS cannot exceed ES_MAX_TIMEOUT_SECONDS")
         if self.read_only and (self.enable_write_tools or self.enable_destructive_tools):
             raise ValueError("Set ES_READ_ONLY=false before enabling write or destructive tools")
         return self

@@ -30,6 +30,7 @@ _KIBANA_SPACE_RE = re.compile(r"^[a-z0-9_-]+$")
 _REPOSITORY_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 _SORT_RE = re.compile(r"^[A-Za-z0-9_@.-]+(?::(asc|desc))?$")
 MAX_KIBANA_QUERY_LENGTH = 256
+MAX_KIBANA_FILTER_VALUES = 50
 
 BLOCKED_DSL_KEYS = {
     "collapse",
@@ -230,8 +231,21 @@ def validate_kibana_search_text(search: str | None) -> str | None:
     if any(char in candidate for char in ("\x00", "\n", "\r")):
         raise SecurityError("Kibana search text contains unsupported control characters")
     if "*" in candidate or "?" in candidate:
-        raise SecurityError("Kibana dashboard search does not allow wildcard characters")
+        raise SecurityError("Kibana search text does not allow wildcard characters")
     return candidate
+
+
+def validate_kibana_filter_values(values: Sequence[str] | None) -> list[str]:
+    if values is None:
+        return []
+    if len(values) > MAX_KIBANA_FILTER_VALUES:
+        raise SecurityError("too many Kibana filter values")
+    normalized = []
+    for value in values:
+        candidate = validate_kibana_search_text(value)
+        if candidate:
+            normalized.append(candidate)
+    return normalized
 
 
 def validate_sort(sort: Sequence[str] | None) -> list[str] | None:

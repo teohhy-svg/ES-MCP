@@ -145,6 +145,12 @@ def _result_count(result: dict[str, Any]) -> int | None:
         "spaces",
         "dashboards",
         "panels",
+        "data",
+        "connectors",
+        "cases",
+        "results",
+        "rule_types",
+        "items",
     ):
         value = result.get(key)
         if isinstance(value, list):

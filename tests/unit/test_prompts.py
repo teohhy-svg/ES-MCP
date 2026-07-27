@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from es_mcp_server.prompts.registry import (
     build_analyze_application_errors_prompt,
+    build_investigate_alert_to_case_prompt,
     build_investigate_incident_prompt,
     build_investigate_kibana_dashboard_prompt,
     build_optimize_search_query_prompt,
     build_troubleshoot_unassigned_shards_prompt,
+    build_troubleshoot_workflow_execution_prompt,
 )
 
 
@@ -60,3 +62,29 @@ def test_investigate_kibana_dashboard_prompt_uses_kibana_tools() -> None:
     assert "kbn_status" in prompt
     assert "kbn_dashboard_references" in prompt
     assert ".kibana*" in prompt
+
+
+def test_alert_to_case_prompt_traces_full_operational_chain() -> None:
+    prompt = build_investigate_alert_to_case_prompt(
+        alert_or_rule="rule-1",
+        symptoms="no case created",
+        space_id="observability",
+    )
+
+    assert "kbn_alerting_health" in prompt
+    assert "kbn_list_connectors" in prompt
+    assert "kbn_workflow_executions" in prompt
+    assert "kbn_case_activity" in prompt
+    assert "kbn_list_ai_agents" in prompt
+
+
+def test_workflow_prompt_preserves_read_only_boundary() -> None:
+    prompt = build_troubleshoot_workflow_execution_prompt(
+        workflow_id="workflow-1",
+        symptoms="failed",
+        space_id=None,
+    )
+
+    assert "kbn_get_workflow" in prompt
+    assert "Do not run, enable, update, or delete" in prompt
+    assert "attached under the rule's Actions" in prompt

@@ -3,10 +3,10 @@
 Production-grade Model Context Protocol server for safe Elasticsearch access from AI clients
 such as Codex, Claude Desktop, and ChatGPT MCP clients.
 
-Current status: Phase 6 is complete with Phase 5 intentionally skipped. The repository
-contains the architecture harness, Python package, read-only Elasticsearch and Kibana MCP
-tools, MCP resources, MCP prompts, Docker/full-stack hosting guidance, MCP client examples,
-and focused tests.
+Current status: the repository contains the architecture harness, Python package, read-only
+Elasticsearch tools, a broader Elastic operations layer for Kibana, MCP resources and prompts,
+Docker/full-stack hosting guidance, MCP client examples, and focused tests. Write/destructive
+operations remain intentionally gated and are not registered in the default build.
 
 ## Mission
 ES-MCP will allow AI clients to safely interact with Elasticsearch for:
@@ -16,6 +16,10 @@ ES-MCP will allow AI clients to safely interact with Elasticsearch for:
 - Guarded search and limited DSL search
 - Observability workflows for logs, error trends, slow queries, shards, and snapshots
 - Kibana status, spaces, dashboard discovery, and dashboard saved-object inspection
+- Alerting framework health, rule discovery, rule details, and safe rule-query inspection
+- Connector, case, workflow, Agent Builder, and Fleet agent discovery
+- Cross-feature capability and permission diagnostics
+- Alert-to-workflow-to-case investigation prompts
 - Optional index creation and deletion are out of scope for the current read-only build
 
 The default posture is read-only, auditable, and conservative.
@@ -55,6 +59,25 @@ Implemented read-only tools:
 - `kbn_list_dashboards`
 - `kbn_get_dashboard`
 - `kbn_dashboard_references`
+- `kbn_capability_report`
+- `kbn_alerting_health`
+- `kbn_rule_types`
+- `kbn_list_rules`
+- `kbn_get_rule`
+- `kbn_rule_query`
+- `kbn_list_connectors`
+- `kbn_list_cases`
+- `kbn_get_case`
+- `kbn_case_alerts`
+- `kbn_case_activity`
+- `kbn_list_workflows`
+- `kbn_get_workflow`
+- `kbn_workflow_executions`
+- `kbn_workflow_connectors`
+- `kbn_list_ai_agents`
+- `kbn_get_ai_agent`
+- `kbn_list_ai_tools`
+- `kbn_list_fleet_agents`
 
 Optional write/destructive tools:
 
@@ -73,6 +96,15 @@ See [harness/TOOL_SCHEMAS.md](harness/TOOL_SCHEMAS.md) for the proposed schemas 
 - `kibana://dashboards`
 - `kibana://dashboards/{dashboard_id}`
 - `kibana://dashboards/{dashboard_id}/references`
+- `kibana://capabilities`
+- `kibana://alerting/health`
+- `kibana://rules`
+- `kibana://connectors`
+- `kibana://cases`
+- `kibana://cases/{case_id}/alerts`
+- `kibana://workflows`
+- `kibana://agents/ai`
+- `kibana://agents/fleet`
 
 ## MCP Prompts
 - `investigate_elasticsearch_incident`
@@ -80,6 +112,8 @@ See [harness/TOOL_SCHEMAS.md](harness/TOOL_SCHEMAS.md) for the proposed schemas 
 - `analyze_application_errors`
 - `optimize_search_query`
 - `investigate_kibana_dashboard`
+- `investigate_alert_to_case`
+- `troubleshoot_workflow_execution`
 
 ## Architecture
 Target stack:
@@ -142,8 +176,9 @@ observability, shards, and snapshots.
 
 Phase 4 adds MCP resources and investigation prompt templates.
 
-Phase 6 adds flexible hosting guidance, MCP client examples, Docker/full-stack instructions,
-and additional tests.
+The Kibana operations layer adds public API coverage for rules, alerting health, connectors,
+cases, workflows, Agent Builder, and Fleet agents without reading `.kibana*` or `.alerts-*`
+system indices directly.
 
 ## Development Phases
 1. Architecture and harness files
@@ -152,6 +187,8 @@ and additional tests.
 4. MCP resources and prompts
 5. Optional write/destructive tools with strict safety controls, skipped for now
 6. Tests, Docker, documentation, and MCP client examples
+7. General Elastic operations discovery for alerts, rules, connectors, cases, workflows,
+   Agent Builder, and Fleet
 
 ## Hosting Options
 Detailed guidance lives in [docs/HOSTING.md](docs/HOSTING.md).
@@ -242,15 +279,19 @@ full path of `es-mcp-server` if it is not on Claude Desktop's `PATH`.
 | `ES_LOG_INDEX_PATTERN` | `logs-*` | Default log index pattern |
 | `ES_SLOW_LOG_INDEX_PATTERN` | unset | Slow-log index pattern |
 
-## Kibana Dashboards
+## Kibana Operations
 This MCP server can now optionally connect to Kibana when `KIBANA_URL` is configured. It
 reads Kibana status, spaces, dashboard saved objects, and dashboard references through
 Kibana APIs.
 
-It still does not read or write `.kibana*` indices directly. Kibana dashboards are saved
-objects managed through Kibana APIs, and Elastic warns not to write directly to the
-`.kibana` index. This extension remains read-only and does not call write, import, export,
-update, or delete Kibana APIs.
+It still does not read or write `.kibana*` or `.alerts-*` indices directly. Kibana objects
+are managed through documented public APIs. This extension remains read-only and does not
+call create, run, write, update, import, export, enable, mute, or delete Kibana APIs.
+
+Workflow endpoints require a Kibana release that exposes the public Workflows APIs.
+Agent Builder endpoints also depend on the target version, license, feature availability,
+and space privileges. Call `kbn_capability_report` before assuming those features are
+available.
 
 See [Kibana Extension Guide](docs/KIBANA.md).
 
@@ -295,4 +336,6 @@ See [harness/TEST_PLAN.md](harness/TEST_PLAN.md).
 - [Test Plan](harness/TEST_PLAN.md)
 
 ## Repository Status
-This repo is intentionally read-only for now. Phase 5 write/destructive tools remain skipped.
+This repo is intentionally read-only by default. Index creation is still not implemented;
+`es_create_index` in the schema is a future, separately gated capability. Index deletion
+must remain behind the stronger destructive-tools gate.
